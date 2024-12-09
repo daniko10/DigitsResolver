@@ -19,20 +19,17 @@ class DigitRecognizerApp:
         self.master.title("Rozpoznawacz cyfr")
         self.master.resizable(False, False)
         self.models = models
-        self.current_model_type = tk.StringVar(value="CNN")  # Domyślny model to CNN
+        self.current_model_type = tk.StringVar(value="CNN")
         self.model = self.models[self.current_model_type.get()]
 
-        # Główna ramka
         self.frame = ttk.Frame(self.master, padding=10)
         self.frame.pack(fill=tk.BOTH, expand=True)
 
-        # Obszar rysowania
         self.canvas = tk.Canvas(self.frame, width=280, height=280, bg="black", relief=tk.RIDGE, bd=2)
         self.canvas.grid(row=0, column=0, rowspan=4, padx=10, pady=10)
         self.canvas.bind("<B1-Motion>", self.paint)
         self.canvas.bind("<ButtonRelease-1>", self.update_prediction)
 
-        # Przyciski akcji
         self.clear_button = ttk.Button(self.frame, text="Wyczyść", command=self.clear_canvas)
         self.clear_button.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
 
@@ -42,7 +39,6 @@ class DigitRecognizerApp:
         self.upload_button = ttk.Button(self.frame, text="Wczytaj obraz (PNG)", command=self.upload_image)
         self.upload_button.grid(row=2, column=1, sticky="ew", padx=10, pady=5)
 
-        # Opcje wyboru modelu
         self.label_model = ttk.Label(self.frame, text="Wybierz model:", font=("Arial", 12))
         self.label_model.grid(row=3, column=1, pady=5, sticky="w")
 
@@ -64,17 +60,15 @@ class DigitRecognizerApp:
         )
         self.mlp_checkbox.grid(row=5, column=1, sticky="w")
 
-        # Wyświetlanie przewidywania
         self.prediction_label = ttk.Label(self.frame, text="Prediction: None", font=("Arial", 16))
         self.prediction_label.grid(row=6, column=0, columnspan=2, pady=10)
 
-        # Obraz do rysowania
         self.image = Image.new("L", (28, 28), color="black")
         self.draw = ImageDraw.Draw(self.image)
 
     def paint(self, event):
         x, y = event.x, event.y
-        r = 3  # Rozmiar pędzla
+        r = 3
         self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="white", outline="white")
         self.draw.ellipse([x / 10 - 1, y / 10 - 1, x / 10 + 1, y / 10 + 1], fill="white")
 
@@ -106,40 +100,34 @@ class DigitRecognizerApp:
         self.prediction_label.config(text=f"Rozpoznana cyfra: {predicted_label}")
 
     def update_model(self):
-        # Aktualizacja modelu na podstawie wyboru
         self.model = self.models[self.current_model_type.get()]
-        self.clear_canvas()  # Czyszczenie płótna przy zmianie modelu
+        self.clear_canvas()
 
     def upload_image(self):
         try:
-            # Wybór pliku z obrazem (tylko PNG)
             file_path = filedialog.askopenfilename(
                 title="Wybierz obraz PNG",
-                filetypes=[("PNG files", "*.png")]  # Akceptujemy tylko pliki PNG
+                filetypes=[("PNG files", "*.png")]
             )
-            if not file_path:  # Jeśli użytkownik nie wybierze pliku
+            if not file_path:
                 print("Nie wybrano pliku.")
                 return
 
-            # Sprawdzenie, czy plik ma poprawne rozszerzenie (dodatkowa weryfikacja)
             if not file_path.lower().endswith(".png"):
                 messagebox.showerror("Invalid File", "Tylko pliki PNG są obsługiwane.")
                 return
 
-            # Załaduj obraz jako skala szarości
             img = Image.open(file_path).convert("L")
-            img = img.resize((28, 28))  # Dopasowanie do rozmiaru MNIST
+            img = img.resize((28, 28))
             self.image = img
             self.draw = ImageDraw.Draw(self.image)
 
-            # Wyświetlenie obrazu na płótnie
             self.canvas.delete("all")
-            resized_img = img.resize((280, 280))  # Skalowanie do rozmiaru płótna
+            resized_img = img.resize((280, 280))
             tk_img = ImageTk.PhotoImage(resized_img)
-            self.canvas.image = tk_img  # Zachowanie referencji do obrazu
+            self.canvas.image = tk_img
             self.canvas.create_image(0, 0, anchor=tk.NW, image=tk_img)
 
-            # Przeprowadzenie predykcji
             self.update_prediction()
         except Exception as e:
             messagebox.showerror("Error", f"Nie udało się załadować obrazu: {e}")
@@ -150,48 +138,39 @@ def load_model_CNN(filepath):
         def __init__(self):
             super(CNNModel, self).__init__()
 
-            # Warstwa konwolucyjna 1
             self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1)
             self.batch_norm1 = nn.BatchNorm2d(32)
             self.dropout1 = nn.Dropout2d(0.25)
-            self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)  # MaxPooling o rozmiarze 2x2
+            self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-            # Warstwa konwolucyjna 2
             self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
             self.batch_norm2 = nn.BatchNorm2d(64)
             self.dropout2 = nn.Dropout2d(0.25)
-            self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)  # MaxPooling o rozmiarze 2x2
+            self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-            # Warstwa konwolucyjna 3
             self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
             self.batch_norm3 = nn.BatchNorm2d(128)
             self.dropout3 = nn.Dropout2d(0.25)
-            self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)  # MaxPooling o rozmiarze 2x2
+            self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-            # Warstwa w pełni połączona (FC)
-            self.fc1 = nn.Linear(128 * 3 * 3, 512)  # Po trzech operacjach poolingowych obraz zostanie zmniejszony do 3x3
-            self.fc2 = nn.Linear(512, 10)  # 10 klas wyjściowych (cyfry 0-9)
+            self.fc1 = nn.Linear(128 * 3 * 3, 512)
+            self.fc2 = nn.Linear(512, 10)
 
         def forward(self, x):
-            # Warstwa konwolucyjna 1 -> BatchNorm -> ReLU -> Dropout -> MaxPool
             x = F.relu(self.batch_norm1(self.conv1(x)))
             x = self.dropout1(x)
             x = self.pool1(x)
 
-            # Warstwa konwolucyjna 2 -> BatchNorm -> ReLU -> Dropout -> MaxPool
             x = F.relu(self.batch_norm2(self.conv2(x)))
             x = self.dropout2(x)
             x = self.pool2(x)
 
-            # Warstwa konwolucyjna 3 -> BatchNorm -> ReLU -> Dropout -> MaxPool
             x = F.relu(self.batch_norm3(self.conv3(x)))
             x = self.dropout3(x)
             x = self.pool3(x)
 
-            # Spłaszczanie obrazu przed warstwą w pełni połączoną
-            x = x.view(-1, 128 * 3 * 3)  # Spłaszczanie: 128 filtrów 3x3
+            x = x.view(-1, 128 * 3 * 3)
 
-            # Warstwa w pełni połączona (FC)
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
             return x
@@ -204,20 +183,18 @@ def load_model_MLP(filepath):
     class MLPShallow(nn.Module):
         def __init__(self):
             super(MLPShallow, self).__init__()
-            self.input_layer = nn.Linear(28 * 28, 512)  # 784 wejścia -> 512 neuronów
-            self.hidden_layer_1 = nn.Linear(512, 256)  # 512 -> 256
-            self.hidden_layer_2 = nn.Linear(256, 128)  # 256 -> 128
-            self.hidden_layer_3 = nn.Linear(128, 64)   # 128 -> 64
-            self.output_layer = nn.Linear(64, 10)     # 64 -> 10 (klasy cyfr)
+            self.input_layer = nn.Linear(28 * 28, 512)
+            self.hidden_layer_1 = nn.Linear(512, 256)
+            self.hidden_layer_2 = nn.Linear(256, 128)
+            self.hidden_layer_3 = nn.Linear(128, 64)
+            self.output_layer = nn.Linear(64, 10)
 
-            # Regularizacja
             self.dropout1 = nn.Dropout(0.2)
             self.dropout2 = nn.Dropout(0.2)
 
         def forward(self, x):
-            x = x.view(-1, 28 * 28)  # Spłaszczenie obrazu
+            x = x.view(-1, 28 * 28)
 
-            # Warstwy w pełni połączone + ReLU + dropout
             x = F.relu(self.input_layer(x))
             x = self.dropout1(x)
 
@@ -230,7 +207,6 @@ def load_model_MLP(filepath):
             x = F.relu(self.hidden_layer_3(x))
             x = self.dropout2(x)
 
-            # Warstwa wyjściowa
             x = self.output_layer(x)
             return x
 
@@ -242,17 +218,14 @@ def load_model_MLP(filepath):
 if __name__ == "__main__":
 
 
-    # Wczytaj modele
     cnn_model = load_model_CNN("cnn.pth")
     mlp_model = load_model_MLP("mlp_shallow.pth")
 
-    # Słownik modeli
     models = {
         "CNN": cnn_model,
         "MLP": mlp_model
     }
 
-    # Uruchom aplikację
     root = tk.Tk()
     app = DigitRecognizerApp(models=models, master=root)
     root.mainloop()
