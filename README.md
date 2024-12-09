@@ -122,3 +122,7 @@ git clone https://github.com/daniko10/DigitsResolver.git
 ```bash
 python3 digitsSolver.py
 ```
+
+## 7. Podsumowanie
+- CNN zgodnie z założeniami działa poprawnie nawet dla nowo narysowanych cyfr
+- MLP nie jest w stanie dobrze określić predykcji nawet z dobrze wyuczonymi wagami, wynika to z jego ograniczeń strukturowych. MLP traktuje każde wejście jako niezależną cechę. Nie ma mechanizmu do uchwycenia relacji przestrzennych między sąsiadującymi pikselami, dlatego nie potrafi wykrywać struktur takich jak krawędzie, rogi czy tekstury, które są kluczowe w identyfikacji cyfry. 
