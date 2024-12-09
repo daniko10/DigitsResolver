@@ -18,10 +18,7 @@ Nasza aplikacja, która umożliwia rozpoznawanie cyfr ręcznie pisanych. Projekt
 
 ### Wybór modelu:
 - Wybierz model klasyfikacji: **CNN** lub **MLP**, korzystając z opcji **"Wybierz model"**.
-
-### Wyświetlanie wyniku predykcji:
-- Obok pola **"Wynik"** po narysowaniu liczby lub wczytaniu pliku pojawi się wynik, który zmienia się dynamicznie wraz z kontynuacja rysowania.
-
+- 
 ---
 
 ## 3. Opis zastosowanej technologii
