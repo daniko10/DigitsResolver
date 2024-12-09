@@ -18,7 +18,7 @@ Nasza aplikacja, która umożliwia rozpoznawanie cyfr ręcznie pisanych. Projekt
 
 ### Wybór modelu:
 - Wybierz model klasyfikacji: **CNN** lub **MLP**, korzystając z opcji **"Wybierz model"**.
-- 
+  
 ---
 
 ## 3. Opis zastosowanej technologii
