@@ -202,8 +202,8 @@ def load_model_CNN(filepath):
 
 def load_model_MLP(filepath):
     class MLPShallow(nn.Module):
-        def init(self):
-            super(MLPShallow, self).init()
+        def __init__(self):
+            super(MLPShallow, self).__init__()
             self.input_layer = nn.Linear(28 * 28, 512)  # 784 wejścia -> 512 neuronów
             self.hidden_layer_1 = nn.Linear(512, 256)  # 512 -> 256
             self.hidden_layer_2 = nn.Linear(256, 128)  # 256 -> 128
