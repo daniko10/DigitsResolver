@@ -62,11 +62,11 @@ W projekcie wykorzystano dwa modele sieci neuronowych: **Convolutional Neural Ne
 ---
 
 ### Stan trenowania modeli
-- Modele zostały wytrenowane na połączonym zbiorze:
+- Modele zostały wytrenowane i zwalidowane na zbiorach:
   - **MNIST Dataset** (cyfry od 0 do 9).
   - **EMNIST Dataset** (split "digits").
 - Mechanizmy w procesie trenowania:
-  - **Dropout**, aby zapobiec przeuczeniu.
+  - **Dropout**, aby zapobiec przeuczeniu - mamy okreslone prawdopodobieństwo, że dany neuron zostanie odrzucony.
   - **Batch Normalization**, aby stabilizować proces uczenia.
 - Wyniki:
   - CNN: **98% dokładności** na zbiorze testowym.
@@ -78,24 +78,13 @@ W projekcie wykorzystano dwa modele sieci neuronowych: **Convolutional Neural Ne
 #### Porównanie:
 - **CNN**:
   - Lepsze w analizie danych obrazowych dzięki zastosowaniu warstw konwolucyjnych, które wykrywają lokalne wzorce.
-  - Wykorzystuje mechanizmy redukcji wymiarów (np. pooling), co poprawia efektywność działania.
+  - Wykorzystuje mechanizmy redukcji wymiarów, co poprawia efektywność działania.
   - Wysoka skuteczność w rozpoznawaniu obrazów z minimalnym przetwarzaniem wstępnym.
 - **MLP**:
   - Klasyczny model, który działa na spłaszczonych danych wejściowych.
-  - Prostota implementacji, ale niższa skuteczność w porównaniu do CNN dla danych obrazowych.
-
+  - Prostota implementacji, ale niższa skuteczność w porównaniu do CNN dla danych obrazowych narysowanych przez użytkownika.
 
 ---
-
-### Stan trenowania modeli
-- Modele zostały starannie wytrenowane na zbiorze **MNIST**.
-- Użyto mechanizmów takich jak:
-  - **Dropout**, aby zapobiec przeuczeniu.
-  - **Batch Normalization**, aby stabilizować proces uczenia.
-- Wyniki:
-  - CNN osiągnął wyższą dokładność (~99%) niż MLP (~97%).
-  - Oba modele nie wykazują oznak przeuczenia.
-
 
 ## 4. Dane
 
@@ -105,8 +94,8 @@ Modele zostały wytrenowane na zbiorze danych **MNIST**:
 - **Liczba próbek:**
   - 60 000 obrazów treningowych.
   - 10 000 obrazów testowych.
-- **Rozmiar obrazów:** 28x28 pikseli w skali szarości.
-- **Liczby:** od 0 do 9.
+- **Rozmiar obrazów:** 28x28 pikseli w skali szarości -> stosujemy binaryzacje dla określonego wcześniej progu.
+- **Cyfry:** od 0 do 9.
 
 ---
 
@@ -124,8 +113,12 @@ Modele zostały wytrenowane na zbiorze danych **MNIST**:
 
 ## 6. Uruchomienie aplikacji
 
-- Pobieramy i wypokuwujemy archiwum DigitsResolver.zip
-- Upewniamy się, że wszystkie biblioteki zaimportowane w pliku DigitsSolver.py są zainstalowane.
-- Wywołujemy komendę
+- użytkownik pobiera z Github zdalne repozytorium
 ```bash
-python3 DigitsSolver.py
+git clone https://github.com/daniko10/DigitsResolver.git
+```
+- po pobraniu wchodzimy w folder DigitsResolver
+- wykonujemy skrypt pythonowy, który udostępnia nam GUI
+```bash
+python3 digitsSolver.py
+```
