@@ -6,12 +6,9 @@ from torchvision import transforms
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-
-
 from tkinter import filedialog
-
+import os
+import re
 
 class DigitRecognizerApp:
     def __init__(self, models, master=None):
@@ -36,7 +33,7 @@ class DigitRecognizerApp:
         self.save_button = ttk.Button(self.frame, text="Zapisz jako PNG", command=self.save_canvas)
         self.save_button.grid(row=1, column=1, sticky="ew", padx=10, pady=5)
 
-        self.upload_button = ttk.Button(self.frame, text="Wczytaj obraz (PNG)", command=self.upload_image)
+        self.upload_button = ttk.Button(self.frame, text="Wczytaj (PNG)", command=self.upload_images_or_folders)
         self.upload_button.grid(row=2, column=1, sticky="ew", padx=10, pady=5)
 
         self.label_model = ttk.Label(self.frame, text="Wybierz model:", font=("Arial", 12))
@@ -88,9 +85,9 @@ class DigitRecognizerApp:
             transforms.Normalize((0.5,), (0.5,))
         ])
         if self.current_model_type.get() == "CNN":
-            return transform(self.image).unsqueeze(0)  # CNN wymaga dodatkowego wymiaru
+            return transform(self.image).unsqueeze(0)
         else:
-            return transform(self.image).view(-1, 784)  # MLP wymaga wektora
+            return transform(self.image).view(-1, 784)
 
     def update_prediction(self, event=None):
         input_tensor = self.preprocess_image()
@@ -98,39 +95,86 @@ class DigitRecognizerApp:
             output = self.model(input_tensor)
             predicted_label = torch.argmax(output).item()
         self.prediction_label.config(text=f"Rozpoznana cyfra: {predicted_label}")
+        return predicted_label
 
     def update_model(self):
         self.model = self.models[self.current_model_type.get()]
         self.clear_canvas()
 
-    def upload_image(self):
+    def upload_images_or_folders(self):
         try:
-            file_path = filedialog.askopenfilename(
+            choice = messagebox.askyesno("Wybór", "Czy chcesz wybrać foldery z obrazami?\n Tak dla 'folderów', Nie dla 'plików'")
+
+            correct_predictions = 0
+            total_predictions = 0
+
+            if choice:
+                folder_path = filedialog.askdirectory(title="Wybierz folder z obrazami (oznaczony jako 0, 1, 2, ...)")
+                if not folder_path:
+                    print("Nie wybrano folderu.")
+                    return
+
+                folder_name = os.path.basename(folder_path)
+                if not folder_name.isdigit():
+                    messagebox.showerror("Błąd", f"Nazwa folderu '{folder_name}' musi być liczbą (np. 0, 1, 2).")
+                    return
+
+                true_label = int(folder_name)
+
+                correct_predictions = 0
+                total_predictions = 0
+
+                for file in os.listdir(folder_path):
+                    if not file.lower().endswith(".png"):
+                        continue
+
+                    file_path = os.path.join(folder_path, file)
+
+                    img = Image.open(file_path).convert("L")
+                    img = img.resize((28, 28))
+
+                    self.image = img
+                    self.draw = ImageDraw.Draw(self.image)
+
+                    prediction = self.update_prediction()
+
+                    if prediction == true_label:
+                        correct_predictions += 1
+                    total_predictions += 1
+            else:
+                file_path = filedialog.askopenfilename(
                 title="Wybierz obraz PNG",
                 filetypes=[("PNG files", "*.png")]
-            )
-            if not file_path:
-                print("Nie wybrano pliku.")
-                return
+                )
+                if not file_path:
+                    print("Nie wybrano pliku.")
+                    return
 
-            if not file_path.lower().endswith(".png"):
-                messagebox.showerror("Invalid File", "Tylko pliki PNG są obsługiwane.")
-                return
+                if not file_path.lower().endswith(".png"):
+                    messagebox.showerror("Invalid File", "Tylko pliki PNG są obsługiwane.")
+                    return
 
-            img = Image.open(file_path).convert("L")
-            img = img.resize((28, 28))
-            self.image = img
-            self.draw = ImageDraw.Draw(self.image)
+                img = Image.open(file_path).convert("L")
+                img = img.resize((28, 28))
+                self.image = img
+                self.draw = ImageDraw.Draw(self.image)
 
-            self.canvas.delete("all")
-            resized_img = img.resize((280, 280))
-            tk_img = ImageTk.PhotoImage(resized_img)
-            self.canvas.image = tk_img
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=tk_img)
+                self.canvas.delete("all")
+                resized_img = img.resize((280, 280))
+                tk_img = ImageTk.PhotoImage(resized_img)
+                self.canvas.image = tk_img
+                self.canvas.create_image(0, 0, anchor=tk.NW, image=tk_img)
 
-            self.update_prediction()
+                prediction = self.update_prediction()
+                print (prediction)
+
+            if total_predictions > 0:
+                accuracy = (correct_predictions / total_predictions) * 100
+                messagebox.showinfo("Wynik", f"Dokładność modelu: {accuracy:.2f}% ({correct_predictions}/{total_predictions})")
+
         except Exception as e:
-            messagebox.showerror("Error", f"Nie udało się załadować obrazu: {e}")
+            messagebox.showerror("Error", f"Nie udało się przetworzyć obrazów: {e}")
+
 
 
 def load_model_CNN(filepath):
