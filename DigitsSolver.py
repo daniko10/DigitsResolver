@@ -79,6 +79,8 @@ class DigitRecognizerApp:
             predicted_label = torch.argmax(output).item()
         self.prediction_label.config(text=f"Rozpoznana cyfra: {predicted_label}")
 
+        return predicted_label
+        
     def load_model(self):
         model_path = filedialog.askopenfilename(title="Wybierz model (.pth)", filetypes=[("PyTorch Model", "*.pth")])
 
@@ -159,7 +161,6 @@ class DigitRecognizerApp:
                 self.canvas.create_image(0, 0, anchor=tk.NW, image=tk_img)
 
                 prediction = self.update_prediction()
-                print (prediction)
 
             if total_predictions > 0:
                 accuracy = (correct_predictions / total_predictions) * 100
