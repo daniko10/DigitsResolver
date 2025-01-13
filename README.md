@@ -10,14 +10,15 @@ Nasza aplikacja, która umożliwia rozpoznawanie cyfr ręcznie pisanych. Projekt
 - Narysuj cyfrę na płótnie, a aplikacja automatycznie wyświetli przewidywanie.
 
 ### Wczytywanie obrazu:
-- Kliknij **"Wczytaj obraz"** i wybierz plik PNG zawierający cyfrę.
-- Obraz zostanie wyświetlony na płótnie, a aplikacja poda wynik klasyfikacji.
+- Kliknij **"Wczytaj obraz"** i wybierz plik PNG zawierający cyfrę lub folder nazwany odpowiednio (0,1,2,itd), co pozwala nam wygenerowanie statystyk odnośnie skuteczności naszego modelu.
+- Przy załadowaniu obraz zostanie on wyświetlony na płótnie, a aplikacja poda wynik klasyfikacji. Przy załadowaniu folderu dostajemy jedynie statystykę.
 
 ### Zapisywanie obrazu:
 - Kliknij **"Zapisz"**, aby zapisać rysunek do pliku PNG.
 
 ### Wybór modelu:
-- Wybierz model klasyfikacji: **CNN** lub **MLP**, korzystając z opcji **"Wybierz model"**.
+- Wybierz model klasyfikacji: **CNN** lub **MLP** (modele przygotowane przez nas), korzystając z opcji **"Wybierz model"**.
+- Jeśli jednak posiadasz inny model (z rozszerzeniem .pth), który chciałbyś załadować to należy stworzyć plik o nazwie {nazwamodelu_loader.py}, który musi zawierać funkcję load_model(filepath), która musi zwracać model w postaci obiektu do zdefiniowanej architektury twojego modelu. Jako przykład można posłużyć plikami **cnn_loader.py** oraz **mlp_shallow_loader.py**.
   
 ---
 
@@ -51,11 +52,10 @@ W projekcie wykorzystano dwa modele sieci neuronowych: **Convolutional Neural Ne
 - **Architektura**:
   - Warstwa wejściowa: 784 neurony (28x28 pikseli).
   - 5 warstw ukrytych:
-    - **Hidden1**: 256 neuronów.
+    - **Hidden1**: 512 neuronów.
     - **Hidden2**: 256 neuronów.
     - **Hidden3**: 128 neuronów.
     - **Hidden4**: 64 neuronów.
-    - **Hidden5**: 32 neuronów.
   - Dropout po każdej warstwie ukrytej (20%).
   - Wyjście: 10 neuronów (dla klas cyfr 0-9).
 
@@ -67,12 +67,11 @@ W projekcie wykorzystano dwa modele sieci neuronowych: **Convolutional Neural Ne
   - **EMNIST Dataset** (split "digits").
 - Mechanizmy w procesie trenowania:
   - **Dropout**, aby zapobiec przeuczeniu - mamy okreslone prawdopodobieństwo, że dany neuron zostanie odrzucony.
-  - **Batch Normalization**, aby stabilizować proces uczenia.
 - Wyniki:
   - CNN: **98% dokładności** na zbiorze testowym.
   - MLP: **94.5% dokładności** na zbiorze testowym.
-  - Żaden z modeli nie wykazuje oznak przeuczenia.
-
+  - MLP z niską skuteczniością wykrywa liczby namalowane przez użytkownika w przeciwieństwie do tych przekazanych w zbiorze testowym, co może wynikać z przeuczenia się modelu i jego struktury.
+  - CNN osiąga wysoką skutecznosć dla cyfr malowanych przez użytkownika.
 ---
 
 #### Porównanie:
@@ -126,3 +125,9 @@ python3 digitsSolver.py
 ## 7. Podsumowanie
 - CNN zgodnie z założeniami działa poprawnie nawet dla nowo narysowanych cyfr
 - MLP nie jest w stanie dobrze określić predykcji nawet z dobrze wyuczonymi wagami, wynika to z jego ograniczeń strukturowych. MLP traktuje każde wejście jako niezależną cechę. Nie ma mechanizmu do uchwycenia relacji przestrzennych między sąsiadującymi pikselami, dlatego nie potrafi wykrywać struktur takich jak krawędzie, rogi czy tekstury, które są kluczowe w identyfikacji cyfry. 
+
+---
+
+## 8. Podział pracy
+- Daniel Czapla: Trenowanie sieci, stworzenie architektury modeli
+- Maciej Leśniak: GUI i dokumentacja
