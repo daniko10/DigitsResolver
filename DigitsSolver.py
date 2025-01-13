@@ -1,23 +1,23 @@
 import tkinter as tk
-from tkinter import messagebox
 from tkinter import ttk
 from PIL import Image, ImageDraw, ImageTk
 from torchvision import transforms
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import os
 import re
+import importlib.util
 
 class DigitRecognizerApp:
-    def __init__(self, models, master=None):
+    def __init__(self, master=None):
         self.master = master
         self.master.title("Rozpoznawacz cyfr")
         self.master.resizable(False, False)
-        self.models = models
-        self.current_model_type = tk.StringVar(value="CNN")
-        self.model = self.models[self.current_model_type.get()]
+
+        self.model = None
+        self.model_path = None
 
         self.frame = ttk.Frame(self.master, padding=10)
         self.frame.pack(fill=tk.BOTH, expand=True)
@@ -36,29 +36,11 @@ class DigitRecognizerApp:
         self.upload_button = ttk.Button(self.frame, text="Wczytaj (PNG)", command=self.upload_images_or_folders)
         self.upload_button.grid(row=2, column=1, sticky="ew", padx=10, pady=5)
 
-        self.label_model = ttk.Label(self.frame, text="Wybierz model:", font=("Arial", 12))
-        self.label_model.grid(row=3, column=1, pady=5, sticky="w")
+        self.load_model_button = ttk.Button(self.frame, text="Wczytaj model", command=self.load_model)
+        self.load_model_button.grid(row=3, column=1, sticky="ew", padx=10, pady=5)
 
-        self.cnn_checkbox = ttk.Checkbutton(
-            self.frame,
-            text="CNN",
-            variable=self.current_model_type,
-            onvalue="CNN",
-            command=self.update_model
-        )
-        self.cnn_checkbox.grid(row=4, column=1, sticky="w")
-
-        self.mlp_checkbox = ttk.Checkbutton(
-            self.frame,
-            text="MLP",
-            variable=self.current_model_type,
-            onvalue="MLP",
-            command=self.update_model
-        )
-        self.mlp_checkbox.grid(row=5, column=1, sticky="w")
-
-        self.prediction_label = ttk.Label(self.frame, text="Prediction: None", font=("Arial", 16))
-        self.prediction_label.grid(row=6, column=0, columnspan=2, pady=10)
+        self.prediction_label = ttk.Label(self.frame, text="Rozpoznana cyfra: brak", font=("Arial", 16))
+        self.prediction_label.grid(row=4, column=0, columnspan=2, pady=10)
 
         self.image = Image.new("L", (28, 28), color="black")
         self.draw = ImageDraw.Draw(self.image)
@@ -73,7 +55,7 @@ class DigitRecognizerApp:
         self.canvas.delete("all")
         self.image = Image.new("L", (28, 28), color="black")
         self.draw = ImageDraw.Draw(self.image)
-        self.prediction_label.config(text="Prediction: None")
+        self.prediction_label.config(text="Rozpoznana cyfra: brak")
 
     def save_canvas(self):
         filepath = "digit.png"
@@ -84,22 +66,33 @@ class DigitRecognizerApp:
             transforms.ToTensor(),
             transforms.Normalize((0.5,), (0.5,))
         ])
-        if self.current_model_type.get() == "CNN":
-            return transform(self.image).unsqueeze(0)
-        else:
-            return transform(self.image).view(-1, 784)
+        return transform(self.image).unsqueeze(0)
 
     def update_prediction(self, event=None):
+        if not self.model:
+            self.prediction_label.config(text="Model nie załadowany")
+            return
+
         input_tensor = self.preprocess_image()
         with torch.no_grad():
             output = self.model(input_tensor)
             predicted_label = torch.argmax(output).item()
         self.prediction_label.config(text=f"Rozpoznana cyfra: {predicted_label}")
-        return predicted_label
 
-    def update_model(self):
-        self.model = self.models[self.current_model_type.get()]
-        self.clear_canvas()
+    def load_model(self):
+        model_path = filedialog.askopenfilename(title="Wybierz model (.pth)", filetypes=[("PyTorch Model", "*.pth")])
+
+        if model_path:
+            try:
+                self.model = load_model_with_script(model_path)
+                self.model_path = model_path
+                model_name = os.path.basename(model_path)
+                self.load_model_button.config(text=f"Załadowano: {model_name}")
+                messagebox.showinfo("Sukces", "Model wczytany pomyślnie!")
+            except Exception as e:
+                self.model_path = None
+                self.load_model_button.config(text="Wczytaj model")
+                messagebox.showerror("Błąd", f"Nie udało się wczytać modelu: {e}")
 
     def upload_images_or_folders(self):
         try:
@@ -176,100 +169,26 @@ class DigitRecognizerApp:
             messagebox.showerror("Error", f"Nie udało się przetworzyć obrazów: {e}")
 
 
+def load_model_with_script(model_path):
+    model_dir, model_file = os.path.split(model_path)
+    model_name, _ = os.path.splitext(model_file)
+    loader_script = os.path.join(model_dir, f"{model_name}_loader.py")
 
-def load_model_CNN(filepath):
-    class CNNModel(nn.Module):
-        def __init__(self):
-            super(CNNModel, self).__init__()
+    if not os.path.exists(loader_script):
+        raise FileNotFoundError(f"Nie znaleziono skryptu ładowania: {loader_script}")
 
-            self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1)
-            self.batch_norm1 = nn.BatchNorm2d(32)
-            self.dropout1 = nn.Dropout2d(0.25)
-            self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+    spec = importlib.util.spec_from_file_location("model_loader", loader_script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
 
-            self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-            self.batch_norm2 = nn.BatchNorm2d(64)
-            self.dropout2 = nn.Dropout2d(0.25)
-            self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+    if not hasattr(module, "load_model"):
+        raise AttributeError(f"Skrypt {loader_script} musi mieć funkcję 'load_model'.")
 
-            self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-            self.batch_norm3 = nn.BatchNorm2d(128)
-            self.dropout3 = nn.Dropout2d(0.25)
-            self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+    return module.load_model(model_path)
 
-            self.fc1 = nn.Linear(128 * 3 * 3, 512)
-            self.fc2 = nn.Linear(512, 10)
-
-        def forward(self, x):
-            x = F.relu(self.batch_norm1(self.conv1(x)))
-            x = self.dropout1(x)
-            x = self.pool1(x)
-
-            x = F.relu(self.batch_norm2(self.conv2(x)))
-            x = self.dropout2(x)
-            x = self.pool2(x)
-
-            x = F.relu(self.batch_norm3(self.conv3(x)))
-            x = self.dropout3(x)
-            x = self.pool3(x)
-
-            x = x.view(-1, 128 * 3 * 3)
-
-            x = F.relu(self.fc1(x))
-            x = self.fc2(x)
-            return x
-    model = CNNModel()
-    model.load_state_dict(torch.load(filepath, weights_only=True))
-    model.eval()
-    return model
-
-def load_model_MLP(filepath):
-    class MLPShallow(nn.Module):
-        def __init__(self):
-            super(MLPShallow, self).__init__()
-            self.input_layer = nn.Linear(28 * 28, 512)
-            self.hidden_layer_1 = nn.Linear(512, 256)
-            self.hidden_layer_2 = nn.Linear(256, 128)
-            self.hidden_layer_3 = nn.Linear(128, 64)
-            self.output_layer = nn.Linear(64, 10)
-
-            self.dropout1 = nn.Dropout(0.2)
-            self.dropout2 = nn.Dropout(0.2)
-
-        def forward(self, x):
-            x = x.view(-1, 28 * 28)
-
-            x = F.relu(self.input_layer(x))
-            x = self.dropout1(x)
-
-            x = F.relu(self.hidden_layer_1(x))
-            x = self.dropout1(x)
-
-            x = F.relu(self.hidden_layer_2(x))
-            x = self.dropout2(x)
-
-            x = F.relu(self.hidden_layer_3(x))
-            x = self.dropout2(x)
-
-            x = self.output_layer(x)
-            return x
-
-    model = MLPShallow()
-    model.load_state_dict(torch.load(filepath, weights_only=True))
-    model.eval()
-    return model
 
 if __name__ == "__main__":
 
-
-    cnn_model = load_model_CNN("cnn.pth")
-    mlp_model = load_model_MLP("mlp_shallow.pth")
-
-    models = {
-        "CNN": cnn_model,
-        "MLP": mlp_model
-    }
-
     root = tk.Tk()
-    app = DigitRecognizerApp(models=models, master=root)
+    app = DigitRecognizerApp(master=root)
     root.mainloop()
